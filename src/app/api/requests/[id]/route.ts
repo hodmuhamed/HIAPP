@@ -1,19 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import prisma from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { canAccessRequest } from "@/lib/request-access";
 
-export async function GET(
-  _request: Request,
-  { params }: { params: { id: string } },
-) {
+type Ctx<P extends Record<string, string>> = { params: Promise<P> };
+
+export async function GET(_req: NextRequest, ctx: Ctx<{ id: string }>) {
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id } = params;
+  const { id } = await ctx.params;
 
   const requestItem = await prisma.request.findUnique({
     where: { id },

@@ -13,13 +13,13 @@ export const buildRequestAccessWhere = (
   const or: Prisma.RequestWhereInput[] = [{ createdById: user.id }];
 
   or.push({
-    type: { visibilityPolicy: "DIRECT_PARTICIPANTS" },
-    recipientId: user.id,
+    type: { visibilityPolicy: "ADMIN_ONLY" },
+    OR: [{ recipientId: user.id }, { assignedToId: user.id }],
   });
 
   or.push({
-    type: { visibilityPolicy: "ADMIN_AND_HANDLERS" },
-    assignedToId: user.id,
+    type: { visibilityPolicy: "DIRECT_PARTICIPANTS" },
+    OR: [{ recipientId: user.id }, { assignedToId: user.id }],
   });
 
   or.push({
@@ -27,6 +27,11 @@ export const buildRequestAccessWhere = (
       visibilityPolicy: "ADMIN_AND_HANDLERS",
       assignees: { some: { userId: user.id } },
     },
+  });
+
+  or.push({
+    type: { visibilityPolicy: "ADMIN_AND_HANDLERS" },
+    OR: [{ assignedToId: user.id }, { recipientId: user.id }],
   });
 
   if (teamId) {
@@ -63,22 +68,27 @@ export const canAccessRequest = (params: {
     return true;
   }
 
-  if (request.createdById === user.id) {
+  const isCreator = request.createdById === user.id;
+  const isRecipient = request.recipientId === user.id;
+  const isAssigned = request.assignedToId === user.id;
+  const isTypeAssignee = request.type.assignees.some(
+    (assignee) => assignee.userId === user.id,
+  );
+  const isSameTeam = Boolean(teamId && request.teamId && request.teamId === teamId);
+
+  if (isCreator) {
     return true;
   }
 
   switch (request.type.visibilityPolicy) {
-    case "DIRECT_PARTICIPANTS":
-      return request.recipientId === user.id;
     case "ADMIN_ONLY":
-      return false;
+      return isRecipient || isAssigned;
+    case "DIRECT_PARTICIPANTS":
+      return isRecipient || isAssigned;
     case "ADMIN_AND_HANDLERS":
-      return (
-        request.assignedToId === user.id ||
-        request.type.assignees.some((assignee) => assignee.userId === user.id)
-      );
+      return isRecipient || isAssigned || isTypeAssignee;
     case "TEAM_PUBLIC":
-      return Boolean(teamId && request.teamId === teamId);
+      return isSameTeam || isRecipient || isAssigned;
     default:
       return false;
   }

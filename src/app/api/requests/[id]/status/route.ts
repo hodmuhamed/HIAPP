@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import prisma from "@/lib/db";
@@ -17,23 +17,24 @@ const statusSchema = z.object({
   note: z.string().optional(),
 });
 
-export async function POST(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
+type Ctx<P extends Record<string, string>> = { params: Promise<P> };
+
+export async function POST(req: NextRequest, ctx: Ctx<{ id: string }>) {
+  const { id } = await ctx.params;
+
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json().catch(() => null);
+  const body = await req.json().catch(() => null);
   const parsed = statusSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid input." }, { status: 400 });
   }
 
   const requestItem = await prisma.request.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       type: { include: { assignees: { select: { userId: true } } } },
     },
