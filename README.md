@@ -44,6 +44,15 @@ Other useful commands:
 npm run db:studio
 ```
 
+## Test credentials
+
+Seeded users for local/dev:
+
+- ADMIN: `admin@humperia.app` / `Admin!ChangeMe123`
+- TEAM_LEAD: `lead@humperia.app` / `Lead!ChangeMe123`
+- WORKER: `worker1@humperia.app` / `Worker!ChangeMe123`
+- WORKER: `worker2@humperia.app` / `Worker!ChangeMe123`
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
