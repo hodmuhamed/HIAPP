@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  TEAM_LEAD
+  WORKER
+}
+
+enum RequestStatus {
+  NEW
+  IN_PROGRESS
+  WAITING_APPROVAL
+  APPROVED
+  REJECTED
+  DONE
+}
+
+enum RequestPriority {
+  LOW
+  NORMAL
+  HIGH
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  role         UserRole
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  teamMembership  TeamMember?
+  createdRequests Request[]         @relation("RequestsCreated")
+  assignedRequests Request[]        @relation("RequestsAssigned")
+  comments         RequestComment[]
+  historyEntries   RequestHistory[]
+  pushSubscriptions PushSubscription[]
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  members  TeamMember[]
+  requests Request[]
+}
+
+model TeamMember {
+  userId    String
+  teamId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  team Team @relation(fields: [teamId], references: [id])
+
+  @@id([userId, teamId])
+  @@unique([userId])
+}
+
+model Request {
+  id           String          @id @default(cuid())
+  title        String
+  description  String
+  status       RequestStatus  @default(NEW)
+  priority     RequestPriority @default(NORMAL)
+  createdById  String
+  assignedToId String?
+  teamId       String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  createdBy  User  @relation("RequestsCreated", fields: [createdById], references: [id])
+  assignedTo User? @relation("RequestsAssigned", fields: [assignedToId], references: [id])
+  team       Team? @relation(fields: [teamId], references: [id])
+  comments   RequestComment[]
+  history    RequestHistory[]
+}
+
+model RequestComment {
+  id        String   @id @default(cuid())
+  requestId String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+
+  request Request @relation(fields: [requestId], references: [id])
+  author  User    @relation(fields: [authorId], references: [id])
+}
+
+model RequestHistory {
+  id         String         @id @default(cuid())
+  requestId  String
+  actorId    String
+  fromStatus RequestStatus
+  toStatus   RequestStatus
+  note       String?
+  createdAt  DateTime       @default(now())
+
+  request Request @relation(fields: [requestId], references: [id])
+  actor   User    @relation(fields: [actorId], references: [id])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
