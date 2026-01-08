@@ -1,14 +1,14 @@
 import { redirect } from "next/navigation";
 
 import { getSessionUser } from "@/lib/auth";
-import RequestsListClient from "./RequestsListClient";
+import RequestCreateClient from "./RequestCreateClient";
 
-export default async function RequestsPage() {
+export default async function NewRequestPage() {
   const user = await getSessionUser();
 
   if (!user) {
     redirect("/login");
   }
 
-  return <RequestsListClient />;
+  return <RequestCreateClient />;
 }

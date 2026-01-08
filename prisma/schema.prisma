@@ -28,6 +28,13 @@ enum RequestPriority {
   HIGH
 }
 
+enum RequestTypeVisibilityPolicy {
+  ADMIN_ONLY
+  DIRECT_PARTICIPANTS
+  ADMIN_AND_HANDLERS
+  TEAM_PUBLIC
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -38,8 +45,9 @@ model User {
   createdAt    DateTime @default(now())
 
   teamMembership  TeamMember?
-  createdRequests Request[]         @relation("RequestsCreated")
+  createdRequests  Request[]        @relation("RequestsCreated")
   assignedRequests Request[]        @relation("RequestsAssigned")
+  recipientRequests Request[]       @relation("RequestsRecipient")
   comments         RequestComment[]
   historyEntries   RequestHistory[]
   pushSubscriptions PushSubscription[]
@@ -72,15 +80,19 @@ model Request {
   description  String
   status       RequestStatus  @default(NEW)
   priority     RequestPriority @default(NORMAL)
+  typeId       String
   createdById  String
   assignedToId String?
+  recipientId  String?
   teamId       String?
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
-  createdBy  User  @relation("RequestsCreated", fields: [createdById], references: [id])
-  assignedTo User? @relation("RequestsAssigned", fields: [assignedToId], references: [id])
-  team       Team? @relation(fields: [teamId], references: [id])
+  type       RequestType @relation(fields: [typeId], references: [id])
+  createdBy  User        @relation("RequestsCreated", fields: [createdById], references: [id])
+  assignedTo User?       @relation("RequestsAssigned", fields: [assignedToId], references: [id])
+  recipient  User?       @relation("RequestsRecipient", fields: [recipientId], references: [id])
+  team       Team?       @relation(fields: [teamId], references: [id])
   comments   RequestComment[]
   history    RequestHistory[]
 }
@@ -118,4 +130,30 @@ model PushSubscription {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
+}
+
+model RequestType {
+  id                 String                     @id @default(cuid())
+  name               String
+  slug               String                     @unique
+  visibilityPolicy   RequestTypeVisibilityPolicy
+  requiresRecipient  Boolean                    @default(false)
+  requiresAssignment Boolean                    @default(false)
+  createdAt          DateTime                   @default(now())
+
+  requests  Request[]
+  assignees RequestTypeAssignee[]
+}
+
+model RequestTypeAssignee {
+  id        String   @id @default(cuid())
+  typeId    String
+  userId    String
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  type RequestType @relation(fields: [typeId], references: [id])
+  user User        @relation(fields: [userId], references: [id])
+
+  @@unique([typeId, userId])
 }

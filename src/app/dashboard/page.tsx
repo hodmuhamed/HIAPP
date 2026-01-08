@@ -16,6 +16,16 @@ export default async function DashboardPage() {
         <p className="mt-4 text-gray-700">
           Prijavljen: {user.fullName} ({user.role})
         </p>
+        <div className="mt-6 space-y-2">
+          <a className="block text-sm font-medium text-gray-900 underline" href="/requests">
+            Pregled zahtjeva
+          </a>
+          {user.role === "ADMIN" ? (
+            <a className="block text-sm font-medium text-gray-900 underline" href="/admin">
+              Admin sekcija
+            </a>
+          ) : null}
+        </div>
         <form action="/api/auth/logout" method="post" className="mt-6">
           <button
             type="submit"
