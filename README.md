@@ -20,6 +20,39 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Database setup (PostgreSQL + Prisma)
+
+You need a PostgreSQL database and a `DATABASE_URL` in `.env`. For local development you can run a local Postgres instance (for example with a locally installed Postgres service), then use a connection string like:
+
+```
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/humperia?schema=public"
+```
+
+Initialize Prisma, run migrations, seed data, and start the app:
+
+```bash
+npm install
+npx prisma generate
+npm run db:migrate
+npm run db:seed
+npm run dev
+```
+
+Other useful commands:
+
+```bash
+npm run db:studio
+```
+
+## Test credentials
+
+Seeded users for local/dev:
+
+- ADMIN: `admin@humperia.app` / `Admin!ChangeMe123`
+- TEAM_LEAD: `lead@humperia.app` / `Lead!ChangeMe123`
+- WORKER: `worker1@humperia.app` / `Worker!ChangeMe123`
+- WORKER: `worker2@humperia.app` / `Worker!ChangeMe123`
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
