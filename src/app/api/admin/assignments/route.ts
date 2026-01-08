@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import prisma from "@/lib/db";
@@ -10,7 +10,12 @@ const assignmentSchema = z.object({
   isPrimary: z.boolean(),
 });
 
-export async function GET() {
+const assignmentDeleteSchema = z.object({
+  typeId: z.string().min(1),
+  userId: z.string().min(1),
+});
+
+export async function GET(_req: NextRequest) {
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -33,7 +38,7 @@ export async function GET() {
   return NextResponse.json(types);
 }
 
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -42,7 +47,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = await request.json().catch(() => null);
+  const body = await req.json().catch(() => null);
   const parsed = assignmentSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid input." }, { status: 400 });
@@ -80,4 +85,33 @@ export async function POST(request: Request) {
   });
 
   return NextResponse.json(result, { status: 201 });
+}
+
+export async function DELETE(req: NextRequest) {
+  const user = await getSessionUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const body = await req.json().catch(() => null);
+  const parsed = assignmentDeleteSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid input." }, { status: 400 });
+  }
+
+  const existing = await prisma.requestTypeAssignee.findUnique({
+    where: { typeId_userId: parsed.data },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
+
+  await prisma.requestTypeAssignee.delete({ where: { typeId_userId: parsed.data } });
+
+  return NextResponse.json({ ok: true });
 }
