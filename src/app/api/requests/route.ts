@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import prisma from "@/lib/db";
@@ -13,7 +13,7 @@ const requestCreateSchema = z.object({
   recipientId: z.string().min(1).optional(),
 });
 
-export async function GET() {
+export async function GET(_req: NextRequest) {
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -38,13 +38,13 @@ export async function GET() {
   return NextResponse.json(requests);
 }
 
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json().catch(() => null);
+  const body = await req.json().catch(() => null);
   const parsed = requestCreateSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid input." }, { status: 400 });
